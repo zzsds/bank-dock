@@ -2,22 +2,53 @@ syntax = "proto3";
 
 package proto.zhongbang;
 
-message OpenAcctMessage {
-  string merchno = 1;
-  string trueName = 2;
-  string certno = 3;
-  string mobile = 4;
-  string cardno = 5;
-  string bankno = 6;
-  string bankName = 7;
-  string signature = 8;
+message OpenAcctRequest {
+  string trueName = 1;
+  string certno = 2;
+  string mobile = 3;
+  string cardno = 4;
+  string bankno = 5;
+  string bankName = 6;
+}
+
+message OpenQueryRequest {
+  string certno = 1;
 }
 
 message OpenAcctResponse {
   string respCode = 1;
   string message = 2;
-  int32 status = 3;
+  string status = 3;
   string statusDesc = 4;
   string trueName = 5;
   string certno = 6;
+}
+
+message VirtPayRequest {
+  string payType = 1;
+  string payMode = 2;
+  string subType = 3;
+  string notifyUrl = 4;
+  string traceno = 5;
+  string amount = 6;
+  string accountno = 7;
+  string accountName = 8;
+  string mobile = 9;
+  string certno = 10;
+  string bankno = 11;
+  string bankName = 12;
+  string bankType = 13;
+  string remark = 14;
+}
+
+message VirtPayResponse {
+  string respCode = 1;
+  string message = 2;
+  string traceno = 3;
+  string orderno = 4;
+  string amount = 5;
+  string transStatus = 6;
+  string payStatus = 7;
+  string payMsg = 8;
+  string signature = 9;
 }

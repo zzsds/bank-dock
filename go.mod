@@ -1,4 +1,4 @@
-module github.com/zzsds/zhongbang
+module github.com/zzsds/bank-dock
 
 go 1.14
 
