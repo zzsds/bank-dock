@@ -52,3 +52,36 @@ message VirtPayResponse {
   string payMsg = 8;
   string signature = 9;
 }
+
+message VirtOrderRequest {
+  string traceno = 1;
+}
+
+message BalanceRequest {
+  string cardno = 1;
+}
+
+message BalanceResponse {
+  string respCode = 1;
+  string message = 2;
+  string amount = 3;
+  string balance = 4;
+  string transit = 5;
+  string frozen = 6;
+  string signature = 7;
+}
+
+message VirtNotifyRequest {
+  string amount = 1;
+  string cardno = 2;
+  string fee = 3;
+  string merchno = 4;
+  string message = 5;
+  string orderno = 6;
+  string transStatus = 7;
+  string payStatus = 8;
+  string traceno = 9;
+  string transDate = 10;
+  string transTime = 11;
+  string signature = 12;
+}

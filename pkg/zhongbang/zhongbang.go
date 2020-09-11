@@ -27,6 +27,39 @@ type Service interface {
 	OpenQuery(*proto_zhongbang.OpenQueryRequest) (*proto_zhongbang.OpenAcctResponse, error)
 
 	VirtPay(*proto_zhongbang.VirtPayRequest) (*proto_zhongbang.VirtPayResponse, error)
+	VirtOrder(*proto_zhongbang.VirtOrderRequest) (*proto_zhongbang.VirtPayResponse, error)
+	Balance(*proto_zhongbang.BalanceRequest) (*proto_zhongbang.BalanceResponse, error)
+	VirtNotify(*proto_zhongbang.VirtNotifyRequest) error
+}
+
+// Params ...
+type Params map[string]interface{}
+
+// NewParmas ...
+func NewParmas(data interface{}) Params {
+	var params = make(map[string]interface{})
+
+	b, err := json.Marshal(data)
+	if err != nil {
+		return nil
+	}
+
+	err = json.Unmarshal(b, &params)
+	if err != nil {
+		return nil
+	}
+	return params
+}
+
+// Set ...
+func (p Params) Set(key string, val interface{}) Params {
+	p[key] = val
+	return p
+}
+
+// Get ...
+func (p Params) Get(key string) interface{} {
+	return p[key]
 }
 
 // Zhongbang ...
@@ -65,29 +98,6 @@ func (h *Zhongbang) Transform(b []byte, t transform.Transformer) ([]byte, error)
 	return b, err
 }
 
-// Sign 加签
-func (h *Zhongbang) Sign(params map[string]interface{}) string {
-	var p []string
-	for k := range params {
-		p = append(p, k)
-	}
-	if !sort.StringsAreSorted(p) {
-		sort.Strings(p)
-	}
-	for k, v := range p {
-		if val, ok := params[v]; ok {
-			p[k] = v + "=" + val.(string)
-		}
-	}
-	if h.Secret == "" {
-		log.Printf("商家密钥不能为空")
-	} else {
-		p = append(p, h.Secret)
-	}
-	// log.Println(strings.Join(p, "&"))
-	return fmt.Sprintf("%x", md5.Sum([]byte(strings.Join(p, "&"))))
-}
-
 // OpenAcct 商户新增白名单的用户信息
 func (h *Zhongbang) OpenAcct(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto_zhongbang.OpenAcctResponse, err error) {
 	u, _ := url.ParseRequestURI(h.Host)
@@ -105,7 +115,7 @@ func (h *Zhongbang) OpenAcct(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto_z
 	}
 
 	params["merchno"] = h.Merchno
-	params["signature"] = h.Sign(params)
+	params["signature"] = sign(params, h.Secret)
 
 	data := url.Values{}
 	for k, v := range params {
@@ -146,7 +156,7 @@ func (h *Zhongbang) OpenUpdate(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto
 	}
 
 	params["merchno"] = h.Merchno
-	params["signature"] = h.Sign(params)
+	params["signature"] = sign(params, h.Secret)
 
 	data := url.Values{}
 	for k, v := range params {
@@ -186,7 +196,7 @@ func (h *Zhongbang) OpenQuery(msg *proto_zhongbang.OpenQueryRequest) (rsp *proto
 	}
 
 	params["merchno"] = h.Merchno
-	params["signature"] = h.Sign(params)
+	params["signature"] = sign(params, h.Secret)
 
 	data := url.Values{}
 	for k, v := range params {
@@ -224,26 +234,22 @@ func (h *Zhongbang) VirtPay(msg *proto_zhongbang.VirtPayRequest) (rsp *proto_zho
 	if err != nil {
 		return
 	}
-
-	signStr := fmt.Sprintf("cardno=%s&traceno=%s&amount=%s&accountno=%s&mobile=%s&bankno=%s&key=%s", h.Cardno, msg.GetTraceno(), msg.GetAmount(), msg.GetAccountno(), msg.GetPayMode(), msg.GetBankno(), h.AgentSecret)
-	sign := []byte(signStr)
-	// sign, err = h.Transform(sign, h.Simplified.NewEncoder())
-	// if err != nil {
-	// 	return nil, err
-	// }
 	params["cardno"] = h.Cardno
-	params["signature"] = fmt.Sprintf("%x", md5.Sum(sign))
 
-	// log.Fatal(params, string(sign))
-	data := url.Values{}
+	signStr := fmt.Sprintf("cardno=%s&traceno=%s&amount=%s&accountno=%s&mobile=%s&bankno=%s&key=%s", h.Cardno, msg.GetTraceno(), msg.GetAmount(), msg.GetAccountno(), msg.GetMobile(), msg.GetBankno(), h.AgentSecret)
+
+	sign := fmt.Sprintf("%x", md5.Sum([]byte(signStr)))
+	var buff bytes.Buffer
 	for k, v := range params {
-		data.Set(k, v.(string))
+		buff.WriteString(fmt.Sprintf("%s=%s&", k, v.(string)))
 	}
+	buff.WriteString(fmt.Sprintf("signature=%s", sign))
 
-	b, err = h.Transform([]byte(data.Encode()), h.Simplified.NewEncoder())
+	b, err = h.Transform(buff.Bytes(), h.Simplified.NewEncoder())
 	if err != nil {
 		return
 	}
+
 	body, err := request(http.MethodPost, u, b)
 	if err != nil {
 		return nil, err
@@ -254,6 +260,101 @@ func (h *Zhongbang) VirtPay(msg *proto_zhongbang.VirtPayRequest) (rsp *proto_zho
 	}
 
 	return rsp, nil
+}
+
+// VirtOrder 实时代付接口
+func (h *Zhongbang) VirtOrder(msg *proto_zhongbang.VirtOrderRequest) (rsp *proto_zhongbang.VirtPayResponse, err error) {
+	u, _ := url.ParseRequestURI(h.Host)
+	u.Path = "virtOrder.do"
+
+	params := make(map[string]interface{})
+	b, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &params)
+	if err != nil {
+		return
+	}
+	params["cardno"] = h.Cardno
+	signStr := fmt.Sprintf("cardno=%s&traceno=%s&key=%s", h.Cardno, msg.GetTraceno(), h.AgentSecret)
+
+	sign := fmt.Sprintf("%x", md5.Sum([]byte(signStr)))
+	var buff bytes.Buffer
+	for k, v := range params {
+		buff.WriteString(fmt.Sprintf("%s=%s&", k, v.(string)))
+	}
+	buff.WriteString(fmt.Sprintf("signature=%s", sign))
+
+	b, err = h.Transform(buff.Bytes(), h.Simplified.NewEncoder())
+	if err != nil {
+		return
+	}
+
+	body, err := request(http.MethodPost, u, b)
+	if err != nil {
+		return nil, err
+	}
+	b, err = h.Transform(body, h.Simplified.NewDecoder())
+	if err := json.Unmarshal(b, &rsp); err != nil {
+		return nil, err
+	}
+
+	return rsp, nil
+}
+
+// Balance 余额查询接口
+func (h *Zhongbang) Balance(msg *proto_zhongbang.BalanceRequest) (rsp *proto_zhongbang.BalanceResponse, err error) {
+	u, _ := url.ParseRequestURI(h.Host)
+	u.Path = "balance.do"
+
+	params := make(map[string]interface{})
+	b, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(b, &params)
+	if err != nil {
+		return
+	}
+
+	signStr := fmt.Sprintf("cardno=%s&key=%s", msg.GetCardno(), h.AgentSecret)
+
+	sign := fmt.Sprintf("%x", md5.Sum([]byte(signStr)))
+	var buff bytes.Buffer
+	for k, v := range params {
+		buff.WriteString(fmt.Sprintf("%s=%s&", k, v.(string)))
+	}
+	buff.WriteString(fmt.Sprintf("signature=%s", sign))
+
+	b, err = h.Transform(buff.Bytes(), h.Simplified.NewEncoder())
+	if err != nil {
+		return
+	}
+
+	body, err := request(http.MethodPost, u, b)
+	if err != nil {
+		return nil, err
+	}
+	b, err = h.Transform(body, h.Simplified.NewDecoder())
+	if err := json.Unmarshal(b, &rsp); err != nil {
+		return nil, err
+	}
+
+	return rsp, nil
+}
+
+// VirtNotify ...
+func (h *Zhongbang) VirtNotify(msg *proto_zhongbang.VirtNotifyRequest) error {
+	var params = NewParmas(msg)
+	delete(params, "signature")
+	signature := strings.ToUpper(sign(params, h.AgentSecret))
+	if msg.GetSignature() != signature {
+		return fmt.Errorf("validate sign fail")
+	}
+	return nil
 }
 
 func request(method string, url *url.URL, params []byte) ([]byte, error) {
@@ -276,4 +377,23 @@ func request(method string, url *url.URL, params []byte) ([]byte, error) {
 	log.Printf("status: %s", resp.Status)
 	log.Printf("response: %s", resp.Header)
 	return ioutil.ReadAll(resp.Body)
+}
+
+// Sign 加签
+func sign(params map[string]interface{}, secret string) string {
+	var p []string
+	for k := range params {
+		p = append(p, k)
+	}
+	if !sort.StringsAreSorted(p) {
+		sort.Strings(p)
+	}
+	for k, v := range p {
+		if val, ok := params[v]; ok {
+			p[k] = v + "=" + val.(string)
+		}
+	}
+	p = append(p, secret)
+	// log.Println(strings.Join(p, "&"))
+	return fmt.Sprintf("%x", md5.Sum([]byte(strings.Join(p, "&"))))
 }
