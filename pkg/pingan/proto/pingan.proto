@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package proto.pingan;
+
+enum TranFun {
+  Default = 0;
+  // 会员签解约维护
+  Contract = 1303;
+  // 入金（银行发起）
+  BankCashIn = 1310;
+  // 出金（银行发起）
+  BankCashOut = 1312;
+  // 出金（交易网发起）
+  CashOut = 1318;
+  // 银行发起异步出金
+  BankCashOutConfirm = 1317;
+  // 清算文件
+  LiquidationFile = 1000;
+  // 清算失败文件
+  LiquidationFailFile = 1001;
+  // 对账不平记录文件
+  UnevenCheckRecordFile = 1007;
+  // 交易网发起会员余额对账
+  MemberBalanceCheck = 1002;
+  // 交易网触发银行进行清算与对账
+  TriggerBankCheck = 1003;
+  // 交易网查询银行清算与对账文件的进度
+  TriggerBankCheckProgress = 1004;
+  // 银行通知交易网查看文件
+  BankNotifyViewFile = 1005;
+  // 交易网发起出入金流水对账及会员开销户流水匹配
+  CashFlowCheckAndSignOutMatch = 1006;
+  // 查银行端会员资金台帐余额【1010】
+  QueryBankMemberBalance = 1010;
+  // 资金汇总账号余额查询【1022】
+  QuerySummaryBalance = 1022;
+  // 出入金账户信息查询【1012】
+  QueryInOutAccount = 1012;
+  // 查时间段会员开销户信息【1016】
+  QueryBetweenMemberSignOut = 1016;
+  // 查交易网端会员管理账户余额【1019】
+  BankQueryMemberBalance = 1019;
+  // 查询时间段会员出入金流水信息【1325】
+  QueryBetweenMemberInOutDetailed = 1325;
+  // 查询时间段会员交易流水信息【1324】
+  QueryBeTweenMemberDetailed = 1324;
+  // 签到签退【1330】
+  SignUpOut = 1330;
+  // 子账户间支付【1332】
+  AccountBetweenPay = 1332;
+  // 子账户间划转【1028】
+  AccountBetweenTransfer = 1028;
+  // 子账户冻结解冻【1029】
+  AccountFrozenAndUnFrozen = 1029;
+  // 平台收费与退费【1030】
+  PlatformChargeRefund = 1030;
+  // 平台支付与收取【1031】
+  PlatformPayCollect = 1031;
+  // 查询账户回单明细【1351】
+  QueryAccountReceiptDetaild = 1351;
+  // 查询回单号验证码【1352】
+  QueryReceiptCode = 1352;
+
+}
+
+message HeaderMessage {
+  string tranFunc = 1;
+  string servType = 2;
+  string macCode = 3;
+  string tranDate = 4;
+  string tranTime = 5;
+  string rspCode = 6;
+  string rspMsg = 7;
+  string conFlag = 8;
+  string length = 9;
+  string counterId = 10;
+  string thirdLogNo = 11;
+  string qydm = 12;
+}
+
+message ContractRequest1303 {
+  string funcFlag = 1;
+  string supAcctId = 2;
+  string custAcctId = 3;
+  string custName = 4;
+  string thirdCustId = 5;
+  string idType = 6;
+  string idCode = 7;
+  string relatedAcctId = 8;
+  string acctFlag = 9;
+  string tranType = 10;
+  string acctName = 11;
+  string bankCode = 12;
+  string bankName = 13;
+  string oldRelatedAcctId = 14;
+  string reserve = 15;
+}
+
+message ContractResponse1303 {
+  string thirdLogNo = 1;
+  string teserve = 2;
+}
+
+message CashOutRequest1318 {
+  string tranWebName = 1;
+  string thirdCustId = 2;
+  string idType = 3;
+  string idCode = 4;
+  string tranOutType = 5;
+  string custAcctId = 6;
+  string custName = 7;
+  string supAcctId = 8;
+  string tranType = 9;
+  string outAcctId = 10;
+  string outAcctIdName = 11;
+  string outAcctIdBankName = 12;
+  string outAcctIdBankCode = 13;
+  string address = 14;
+  string ccyCode = 15;
+  string tranAmount = 16;
+  string feeOutCustId = 17;
+  string reserve = 18;
+}
+
+message CashOutResponse1318 {
+  string frontLogNo = 1;
+  string handFee = 2;
+  string feeOutCustId = 3;
+  string reserve = 4;
+}

@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	zb = zhongbang.New(func(o *zhongbang.Zhongbang) {
+	zb = zhongbang.New(func(o *zhongbang.Options) {
 		// o.Host = "http://settle.kwfzhifu.com"
 		o.Host = "http://settle.test.kwfzhifu.com"
 		// 商户号
