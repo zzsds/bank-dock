@@ -20,6 +20,11 @@ import (
 	"golang.org/x/text/transform"
 )
 
+var (
+	// Host 生产环境地址
+	Host = "http://settle.zshqap.com"
+)
+
 // Service ...
 type Service interface {
 	OpenAcct(*proto_zhongbang.OpenAcctRequest) (*proto_zhongbang.OpenAcctResponse, error)
@@ -55,6 +60,7 @@ func New(opt ...Option) Service {
 	// 设置默认值
 	var opts = Options{
 		Simplified: simplifiedchinese.GBK,
+		Host:       Host,
 	}
 	for _, o := range opt {
 		o(&opts)
@@ -67,7 +73,7 @@ func New(opt ...Option) Service {
 // OpenAcct 商户新增白名单的用户信息
 func (h *Zhongbang) OpenAcct(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto_zhongbang.OpenAcctResponse, err error) {
 	u, _ := url.ParseRequestURI(h.options.Host)
-	u.Path = "openAcct.do"
+	u.Path = "/openAcct.do"
 
 	params := pkg.NewParmas(msg)
 
@@ -94,7 +100,7 @@ func (h *Zhongbang) OpenAcct(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto_z
 // OpenUpdate 商户修改白名单的用户信息
 func (h *Zhongbang) OpenUpdate(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto_zhongbang.OpenAcctResponse, err error) {
 	u, _ := url.ParseRequestURI(h.options.Host)
-	u.Path = "openUpdate.do"
+	u.Path = "/openUpdate.do"
 
 	params := pkg.NewParmas(msg)
 
@@ -120,7 +126,7 @@ func (h *Zhongbang) OpenUpdate(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto
 // OpenQuery 查询商户白名单的用户信息
 func (h *Zhongbang) OpenQuery(msg *proto_zhongbang.OpenQueryRequest) (rsp *proto_zhongbang.OpenAcctResponse, err error) {
 	u, _ := url.ParseRequestURI(h.options.Host)
-	u.Path = "openQuery.do"
+	u.Path = "/openQuery.do"
 
 	params := pkg.NewParmas(msg)
 
@@ -146,7 +152,7 @@ func (h *Zhongbang) OpenQuery(msg *proto_zhongbang.OpenQueryRequest) (rsp *proto
 // VirtPay 实时代付接口
 func (h *Zhongbang) VirtPay(msg *proto_zhongbang.VirtPayRequest) (rsp *proto_zhongbang.VirtPayResponse, err error) {
 	u, _ := url.ParseRequestURI(h.options.Host)
-	u.Path = "virtPay.do"
+	u.Path = "/virtPay.do"
 
 	params := pkg.NewParmas(msg)
 	params["cardno"] = h.options.Cardno
@@ -180,7 +186,7 @@ func (h *Zhongbang) VirtPay(msg *proto_zhongbang.VirtPayRequest) (rsp *proto_zho
 // VirtOrder 实时代付接口
 func (h *Zhongbang) VirtOrder(msg *proto_zhongbang.VirtOrderRequest) (rsp *proto_zhongbang.VirtPayResponse, err error) {
 	u, _ := url.ParseRequestURI(h.options.Host)
-	u.Path = "virtOrder.do"
+	u.Path = "/virtOrder.do"
 
 	params := pkg.NewParmas(msg)
 	params["cardno"] = h.options.Cardno
@@ -213,7 +219,7 @@ func (h *Zhongbang) VirtOrder(msg *proto_zhongbang.VirtOrderRequest) (rsp *proto
 // Balance 余额查询接口
 func (h *Zhongbang) Balance(msg *proto_zhongbang.BalanceRequest) (rsp *proto_zhongbang.BalanceResponse, err error) {
 	u, _ := url.ParseRequestURI(h.options.Host)
-	u.Path = "balance.do"
+	u.Path = "/balance.do"
 
 	params := pkg.NewParmas(msg)
 

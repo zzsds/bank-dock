@@ -10,7 +10,8 @@ import (
 var (
 	zb = zhongbang.New(func(o *zhongbang.Options) {
 		// o.Host = "http://settle.kwfzhifu.com"
-		o.Host = "http://settle.test.kwfzhifu.com"
+		// 测试环境弃用，提供方要求采用正式环境进行测试联调
+		// o.Host = "http://settle.test.kwfzhifu.com"
 		// 商户号
 		o.Merchno = "886331041120001"
 		// 商家虚拟账户号（白名单接口无用）
