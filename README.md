@@ -1,4 +1,4 @@
-# 中智时代银行对接接口
+# 交易所银行对接接口
 
 ## 平安银行
   [pkg/pingan](pkg/pingan/pingan.go)
