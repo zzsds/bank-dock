@@ -10,7 +10,7 @@ type Params map[string]string
 
 // NewParmas ...
 func NewParmas(data interface{}) Params {
-	var params = make(map[string]string)
+	var params = make(Params)
 
 	b, err := json.Marshal(data)
 	if err != nil {

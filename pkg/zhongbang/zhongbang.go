@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	dock "github.com/zzsds/bank-dock"
 	"github.com/zzsds/bank-dock/pkg"
 	proto_zhongbang "github.com/zzsds/bank-dock/pkg/zhongbang/proto"
 	"golang.org/x/text/encoding"
@@ -21,13 +22,9 @@ import (
 	"golang.org/x/text/transform"
 )
 
-var (
-	// Host 生产环境地址
-	Host = "http://settle.zshqap.com"
-)
-
 // Service ...
 type Service interface {
+	dock.Server
 	OpenAcct(*proto_zhongbang.OpenAcctRequest) (*proto_zhongbang.OpenAcctResponse, error)
 	OpenUpdate(*proto_zhongbang.OpenAcctRequest) (*proto_zhongbang.OpenAcctResponse, error)
 	OpenQuery(*proto_zhongbang.OpenQueryRequest) (*proto_zhongbang.OpenAcctResponse, error)
@@ -61,7 +58,6 @@ func New(opt ...Option) Service {
 	// 设置默认值
 	var opts = Options{
 		Simplified: simplifiedchinese.GBK,
-		Host:       Host,
 	}
 	for _, o := range opt {
 		o(&opts)
@@ -69,6 +65,10 @@ func New(opt ...Option) Service {
 	return &Zhongbang{
 		opts: opts,
 	}
+}
+
+func (h *Zhongbang) String() string {
+	return "zhongbang"
 }
 
 // OpenAcct 商户新增白名单的用户信息
@@ -80,13 +80,11 @@ func (h *Zhongbang) OpenAcct(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto_z
 
 	params["merchno"] = h.opts.Merchno
 	params["signature"] = sign(params, h.opts.Secret)
+
 	b, err := Transform([]byte(params.URL()), h.opts.Simplified.NewEncoder())
 	if err != nil {
 		return
 	}
-	// b = []byte(params.URL())
-	// fmt.Println(string(b), params.URL())
-	// os.Exit(1)
 
 	body, err := request(http.MethodPost, u, b)
 	if err != nil {
@@ -288,7 +286,7 @@ func request(method string, url *url.URL, params []byte) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-// Sign 加签
+// sign 加签
 func sign(params pkg.Params, secret string) string {
 	var p []string
 	for k := range params {
@@ -303,8 +301,9 @@ func sign(params pkg.Params, secret string) string {
 		}
 	}
 	p = append(p, secret)
-	// log.Println(strings.Join(p, "&"))
-	return fmt.Sprintf("%x", md5.Sum([]byte(strings.Join(p, "&"))))
+	// 编码转换 UTF8 -> GBK
+	gbk, _ := simplifiedchinese.GBK.NewEncoder().Bytes([]byte(strings.Join(p, "&")))
+	return fmt.Sprintf("%x", md5.Sum(gbk))
 }
 
 // Transform 编码格式转换
