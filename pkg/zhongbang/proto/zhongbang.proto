@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package proto.zhongbang;
 
+option go_package = "proto;proto";
+
 message OpenAcctRequest {
   string trueName = 1;
   string certno = 2;
@@ -22,6 +24,8 @@ message OpenAcctResponse {
   string statusDesc = 4;
   string trueName = 5;
   string certno = 6;
+  string balance = 7;
+  string bankAccount = 8;
 }
 
 message VirtPayRequest {

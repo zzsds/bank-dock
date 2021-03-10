@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -39,7 +40,7 @@ type Service interface {
 
 // Zhongbang ...
 type Zhongbang struct {
-	options Options
+	opts Options
 }
 
 // Options ...
@@ -66,30 +67,33 @@ func New(opt ...Option) Service {
 		o(&opts)
 	}
 	return &Zhongbang{
-		options: opts,
+		opts: opts,
 	}
 }
 
 // OpenAcct 商户新增白名单的用户信息
 func (h *Zhongbang) OpenAcct(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto_zhongbang.OpenAcctResponse, err error) {
-	u, _ := url.ParseRequestURI(h.options.Host)
+	u, _ := url.ParseRequestURI(h.opts.Host)
 	u.Path = "/openAcct.do"
 
 	params := pkg.NewParmas(msg)
 
-	params["merchno"] = h.options.Merchno
-	params["signature"] = sign(params, h.options.Secret)
-
-	b, err := Transform([]byte(params.URL()), h.options.Simplified.NewEncoder())
+	params["merchno"] = h.opts.Merchno
+	params["signature"] = sign(params, h.opts.Secret)
+	b, err := Transform([]byte(params.URL()), h.opts.Simplified.NewEncoder())
 	if err != nil {
 		return
 	}
+	// b = []byte(params.URL())
+	// fmt.Println(string(b), params.URL())
+	// os.Exit(1)
 
 	body, err := request(http.MethodPost, u, b)
 	if err != nil {
 		return nil, err
 	}
-	b, err = Transform(body, h.options.Simplified.NewDecoder())
+
+	b, err = Transform(body, h.opts.Simplified.NewDecoder())
 	if err := json.Unmarshal(b, &rsp); err != nil {
 		return nil, err
 	}
@@ -99,15 +103,15 @@ func (h *Zhongbang) OpenAcct(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto_z
 
 // OpenUpdate 商户修改白名单的用户信息
 func (h *Zhongbang) OpenUpdate(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto_zhongbang.OpenAcctResponse, err error) {
-	u, _ := url.ParseRequestURI(h.options.Host)
+	u, _ := url.ParseRequestURI(h.opts.Host)
 	u.Path = "/openUpdate.do"
 
 	params := pkg.NewParmas(msg)
 
-	params["merchno"] = h.options.Merchno
-	params["signature"] = sign(params, h.options.Secret)
+	params["merchno"] = h.opts.Merchno
+	params["signature"] = sign(params, h.opts.Secret)
 
-	b, err := Transform([]byte(params.URL()), h.options.Simplified.NewEncoder())
+	b, err := Transform([]byte(params.URL()), h.opts.Simplified.NewEncoder())
 	if err != nil {
 		return
 	}
@@ -115,7 +119,7 @@ func (h *Zhongbang) OpenUpdate(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto
 	if err != nil {
 		return nil, err
 	}
-	b, err = Transform(body, h.options.Simplified.NewDecoder())
+	b, err = Transform(body, h.opts.Simplified.NewDecoder())
 	if err := json.Unmarshal(b, &rsp); err != nil {
 		return nil, err
 	}
@@ -125,15 +129,15 @@ func (h *Zhongbang) OpenUpdate(msg *proto_zhongbang.OpenAcctRequest) (rsp *proto
 
 // OpenQuery 查询商户白名单的用户信息
 func (h *Zhongbang) OpenQuery(msg *proto_zhongbang.OpenQueryRequest) (rsp *proto_zhongbang.OpenAcctResponse, err error) {
-	u, _ := url.ParseRequestURI(h.options.Host)
+	u, _ := url.ParseRequestURI(h.opts.Host)
 	u.Path = "/openQuery.do"
 
 	params := pkg.NewParmas(msg)
 
-	params["merchno"] = h.options.Merchno
-	params["signature"] = sign(params, h.options.Secret)
+	params["merchno"] = h.opts.Merchno
+	params["signature"] = sign(params, h.opts.Secret)
 
-	b, err := Transform([]byte(params.URL()), h.options.Simplified.NewEncoder())
+	b, err := Transform([]byte(params.URL()), h.opts.Simplified.NewEncoder())
 	if err != nil {
 		return
 	}
@@ -141,7 +145,7 @@ func (h *Zhongbang) OpenQuery(msg *proto_zhongbang.OpenQueryRequest) (rsp *proto
 	if err != nil {
 		return nil, err
 	}
-	b, err = Transform(body, h.options.Simplified.NewDecoder())
+	b, err = Transform(body, h.opts.Simplified.NewDecoder())
 	if err := json.Unmarshal(b, &rsp); err != nil {
 		return nil, err
 	}
@@ -151,13 +155,13 @@ func (h *Zhongbang) OpenQuery(msg *proto_zhongbang.OpenQueryRequest) (rsp *proto
 
 // VirtPay 实时代付接口
 func (h *Zhongbang) VirtPay(msg *proto_zhongbang.VirtPayRequest) (rsp *proto_zhongbang.VirtPayResponse, err error) {
-	u, _ := url.ParseRequestURI(h.options.Host)
+	u, _ := url.ParseRequestURI(h.opts.Host)
 	u.Path = "/virtPay.do"
 
 	params := pkg.NewParmas(msg)
-	params["cardno"] = h.options.Cardno
+	params["cardno"] = h.opts.Cardno
 
-	signStr := fmt.Sprintf("cardno=%s&traceno=%s&amount=%s&accountno=%s&mobile=%s&bankno=%s&key=%s", h.options.Cardno, msg.GetTraceno(), msg.GetAmount(), msg.GetAccountno(), msg.GetMobile(), msg.GetBankno(), h.options.AgentSecret)
+	signStr := fmt.Sprintf("cardno=%s&traceno=%s&amount=%s&accountno=%s&mobile=%s&bankno=%s&key=%s", h.opts.Cardno, msg.GetTraceno(), msg.GetAmount(), msg.GetAccountno(), msg.GetMobile(), msg.GetBankno(), h.opts.AgentSecret)
 
 	sign := fmt.Sprintf("%x", md5.Sum([]byte(signStr)))
 	var buff bytes.Buffer
@@ -166,7 +170,7 @@ func (h *Zhongbang) VirtPay(msg *proto_zhongbang.VirtPayRequest) (rsp *proto_zho
 	}
 	buff.WriteString(fmt.Sprintf("signature=%s", sign))
 
-	b, err := Transform(buff.Bytes(), h.options.Simplified.NewEncoder())
+	b, err := Transform(buff.Bytes(), h.opts.Simplified.NewEncoder())
 	if err != nil {
 		return
 	}
@@ -175,7 +179,7 @@ func (h *Zhongbang) VirtPay(msg *proto_zhongbang.VirtPayRequest) (rsp *proto_zho
 	if err != nil {
 		return nil, err
 	}
-	b, err = Transform(body, h.options.Simplified.NewDecoder())
+	b, err = Transform(body, h.opts.Simplified.NewDecoder())
 	if err := json.Unmarshal(b, &rsp); err != nil {
 		return nil, err
 	}
@@ -185,12 +189,12 @@ func (h *Zhongbang) VirtPay(msg *proto_zhongbang.VirtPayRequest) (rsp *proto_zho
 
 // VirtOrder 实时代付接口
 func (h *Zhongbang) VirtOrder(msg *proto_zhongbang.VirtOrderRequest) (rsp *proto_zhongbang.VirtPayResponse, err error) {
-	u, _ := url.ParseRequestURI(h.options.Host)
+	u, _ := url.ParseRequestURI(h.opts.Host)
 	u.Path = "/virtOrder.do"
 
 	params := pkg.NewParmas(msg)
-	params["cardno"] = h.options.Cardno
-	signStr := fmt.Sprintf("cardno=%s&traceno=%s&key=%s", h.options.Cardno, msg.GetTraceno(), h.options.AgentSecret)
+	params["cardno"] = h.opts.Cardno
+	signStr := fmt.Sprintf("cardno=%s&traceno=%s&key=%s", h.opts.Cardno, msg.GetTraceno(), h.opts.AgentSecret)
 
 	sign := fmt.Sprintf("%x", md5.Sum([]byte(signStr)))
 	var buff bytes.Buffer
@@ -199,7 +203,7 @@ func (h *Zhongbang) VirtOrder(msg *proto_zhongbang.VirtOrderRequest) (rsp *proto
 	}
 	buff.WriteString(fmt.Sprintf("signature=%s", sign))
 
-	b, err := Transform(buff.Bytes(), h.options.Simplified.NewEncoder())
+	b, err := Transform(buff.Bytes(), h.opts.Simplified.NewEncoder())
 	if err != nil {
 		return
 	}
@@ -208,7 +212,7 @@ func (h *Zhongbang) VirtOrder(msg *proto_zhongbang.VirtOrderRequest) (rsp *proto
 	if err != nil {
 		return nil, err
 	}
-	b, err = Transform(body, h.options.Simplified.NewDecoder())
+	b, err = Transform(body, h.opts.Simplified.NewDecoder())
 	if err := json.Unmarshal(b, &rsp); err != nil {
 		return nil, err
 	}
@@ -218,12 +222,12 @@ func (h *Zhongbang) VirtOrder(msg *proto_zhongbang.VirtOrderRequest) (rsp *proto
 
 // Balance 余额查询接口
 func (h *Zhongbang) Balance(msg *proto_zhongbang.BalanceRequest) (rsp *proto_zhongbang.BalanceResponse, err error) {
-	u, _ := url.ParseRequestURI(h.options.Host)
+	u, _ := url.ParseRequestURI(h.opts.Host)
 	u.Path = "/balance.do"
 
 	params := pkg.NewParmas(msg)
 
-	signStr := fmt.Sprintf("cardno=%s&key=%s", msg.GetCardno(), h.options.AgentSecret)
+	signStr := fmt.Sprintf("cardno=%s&key=%s", msg.GetCardno(), h.opts.AgentSecret)
 
 	sign := fmt.Sprintf("%x", md5.Sum([]byte(signStr)))
 	var buff bytes.Buffer
@@ -232,7 +236,7 @@ func (h *Zhongbang) Balance(msg *proto_zhongbang.BalanceRequest) (rsp *proto_zho
 	}
 	buff.WriteString(fmt.Sprintf("signature=%s", sign))
 
-	b, err := Transform(buff.Bytes(), h.options.Simplified.NewEncoder())
+	b, err := Transform(buff.Bytes(), h.opts.Simplified.NewEncoder())
 	if err != nil {
 		return
 	}
@@ -241,7 +245,7 @@ func (h *Zhongbang) Balance(msg *proto_zhongbang.BalanceRequest) (rsp *proto_zho
 	if err != nil {
 		return nil, err
 	}
-	b, err = Transform(body, h.options.Simplified.NewDecoder())
+	b, err = Transform(body, h.opts.Simplified.NewDecoder())
 	if err := json.Unmarshal(b, &rsp); err != nil {
 		return nil, err
 	}
@@ -255,9 +259,9 @@ func (h *Zhongbang) VirtNotify(msg *proto_zhongbang.VirtNotifyRequest) error {
 	params := pkg.NewParmas(msg)
 	params.Delete("signature")
 
-	signature := strings.ToUpper(sign(params, h.options.AgentSecret))
+	signature := strings.ToUpper(sign(params, h.opts.AgentSecret))
 	if msg.GetSignature() != signature {
-		return fmt.Errorf("validate sign fail")
+		return errors.New("validate sign fail")
 	}
 	return nil
 }
@@ -277,7 +281,7 @@ func request(method string, url *url.URL, params []byte) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("http status fail")
+		return nil, errors.New("http status fail")
 	}
 	log.Printf("status: %s", resp.Status)
 	log.Printf("response: %s", resp.Header)

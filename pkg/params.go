@@ -47,5 +47,7 @@ func (p Params) URL() string {
 	for k, v := range p {
 		u.Set(k, v)
 	}
-	return u.Encode()
+	url, _ := url.QueryUnescape(u.Encode())
+
+	return url
 }

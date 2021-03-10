@@ -28,8 +28,8 @@ type Service interface {
 
 // Pingan ...
 type Pingan struct {
-	options Options
-	conn    net.Conn
+	opts Options
+	conn net.Conn
 }
 
 // Sftp 银行 sftp
@@ -86,8 +86,8 @@ func New(opt ...Option) Service {
 	conn.SetNoDelay(true)
 	conn.SetWriteBuffer(4096)
 	return &Pingan{
-		options: opts,
-		conn:    conn,
+		opts: opts,
+		conn: conn,
 	}
 }
 
@@ -117,7 +117,7 @@ func (h *Pingan) Contract(req proto_pingan.ContractRequest1303) (*proto_pingan.C
 func (h *Pingan) CashOut(req proto_pingan.CashOutRequest1318) (*proto_pingan.CashOutResponse1318, error) {
 	tranFunc := "1318"
 	var buff bytes.Buffer
-	req.SupAcctId = h.options.SupAcctiD
+	req.SupAcctId = h.opts.SupAcctiD
 	u := pkg.NewParmas(req).URL()
 	thirdLogNoget := getThirdLogNo()
 	headerMsg := h.getHeader(len(u), proto_pingan.HeaderMessage{
@@ -128,7 +128,7 @@ func (h *Pingan) CashOut(req proto_pingan.CashOutRequest1318) (*proto_pingan.Cas
 	h.conn.SetWriteDeadline(time.Now().Add(time.Second * 3))
 	h.conn.SetReadDeadline(time.Now().Add(time.Second * 5))
 
-	b, err := Transform([]byte(u), h.options.Simplified.NewEncoder())
+	b, err := Transform([]byte(u), h.opts.Simplified.NewEncoder())
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (h *Pingan) GetThirdLogNo() string {
 
 // GetHeader 获取header 头信息
 func (h *Pingan) getHeader(length int, data proto_pingan.HeaderMessage) string {
-	data.Qydm = h.options.QYdm
+	data.Qydm = h.opts.QYdm
 	dateFormat := time.Now().Format("20060102150405")
 	length1 := strconv.Itoa(length + 122)
 	length2 := strconv.Itoa(length)
